@@ -240,6 +240,3 @@ export async function reportGreetings(): Promise<void> {
     'time(s)',
   );
 }
-
-export async function makeInstruction(): Promise<void> {
-}
