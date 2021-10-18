@@ -28,9 +28,11 @@ let connection: Connection;
 let payer: Keypair;
 
 /**
- * Hello world's program id
+ * Invoker's program id
  */
-let programId: PublicKey;
+let invokerId: PublicKey;
+
+let helloId: PublicKey;
 
 /**
  * The public key of the account we are saying hello to
@@ -48,13 +50,15 @@ const PROGRAM_PATH = path.resolve(__dirname, '../../dist/program');
  *   - `npm run build:program-c`
  *   - `npm run build:program-rust`
  */
-const PROGRAM_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
+const HELLO_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
+const INVOKER_SO_PATH = path.join(PROGRAM_PATH, 'invoker.so');
 
 /**
  * Path to the keypair of the deployed program.
  * This file is created when running `solana program deploy dist/program/helloworld.so`
  */
-const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
+const HELLO_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
+const INVOKER_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'invoker-keypair.json');
 
 /**
  * The state of a greeting account managed by the hello world program
@@ -131,41 +135,44 @@ export async function establishPayer(): Promise<void> {
 }
 
 /**
- * Check if the hello world BPF program has been deployed
+ * Check if the invoker BPF program has been deployed
  */
 export async function checkProgram(): Promise<void> {
   // Read program id from keypair file
   try {
-    const programKeypair = await createKeypairFromFile(PROGRAM_KEYPAIR_PATH);
-    programId = programKeypair.publicKey;
+    const invokerKeyPair = await createKeypairFromFile(INVOKER_KEYPAIR_PATH);
+    invokerId = invokerKeyPair.publicKey;
+
+    const helloKeyPair = await createKeypairFromFile(HELLO_KEYPAIR_PATH);
+    helloId = helloKeyPair.publicKey;
   } catch (err) {
     const errMsg = (err as Error).message;
     throw new Error(
-      `Failed to read program keypair at '${PROGRAM_KEYPAIR_PATH}' due to error: ${errMsg}. Program may need to be deployed with \`solana program deploy dist/program/helloworld.so\``,
+      `Failed to read invoker keypair at '${INVOKER_KEYPAIR_PATH}' due to error: ${errMsg}. Invoker may need to be deployed with \`solana program deploy dist/program/invoker.so\``,
     );
   }
 
-  // Check if the program has been deployed
-  const programInfo = await connection.getAccountInfo(programId);
-  if (programInfo === null) {
-    if (fs.existsSync(PROGRAM_SO_PATH)) {
+  // Check if the invoker has been deployed
+  const invokerInfo = await connection.getAccountInfo(invokerId);
+  if (invokerInfo === null) {
+    if (fs.existsSync(INVOKER_SO_PATH)) {
       throw new Error(
-        'Program needs to be deployed with `solana program deploy dist/program/helloworld.so`',
+        'Program needs to be deployed with `solana program deploy dist/program/invoker.so`',
       );
     } else {
       throw new Error('Program needs to be built and deployed');
     }
-  } else if (!programInfo.executable) {
-    throw new Error(`Program is not executable`);
+  } else if (!invokerInfo.executable) {
+    throw new Error(`Invoker is not executable`);
   }
-  console.log(`Using program ${programId.toBase58()}`);
+  console.log(`Using program ${invokerId.toBase58()}`);
 
-  // Derive the address (public key) of a greeting account from the program so that it's easy to find later.
+  // Derive the address (public key) of a greeting account from the hello program so that it's easy to find later.
   const GREETING_SEED = 'hello';
   greetedPubkey = await PublicKey.createWithSeed(
     payer.publicKey,
     GREETING_SEED,
-    programId,
+    helloId,
   );
 
   // Check if the greeting account has already been created
@@ -188,7 +195,7 @@ export async function checkProgram(): Promise<void> {
         newAccountPubkey: greetedPubkey,
         lamports,
         space: GREETING_SIZE,
-        programId,
+        programId: helloId,
       }),
     );
     await sendAndConfirmTransaction(connection, transaction, [payer]);
@@ -201,8 +208,9 @@ export async function checkProgram(): Promise<void> {
 export async function sayHello(): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
   const instruction = new TransactionInstruction({
-    keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
-    programId,
+    keys: [{pubkey: helloId, isSigner: false, isWritable: false},
+      {pubkey: greetedPubkey, isSigner: false, isWritable: true}],
+    programId: invokerId,
     data: Buffer.alloc(0), // All instructions are hellos
   });
   await sendAndConfirmTransaction(
@@ -231,4 +239,7 @@ export async function reportGreetings(): Promise<void> {
     greeting.counter,
     'time(s)',
   );
+}
+
+export async function makeInstruction(): Promise<void> {
 }
