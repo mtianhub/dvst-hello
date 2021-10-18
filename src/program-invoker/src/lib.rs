@@ -27,7 +27,6 @@ pub fn process_instruction(
     // Get the account to say hello to
     let greeted_account_ai = next_account_info(accounts_iter)?;
     
-    //TODO hello_account_ai.owner = hello_prog_ai.key
     let data: Vec<u8> = Vec::new();
 
     let instruction = Instruction {
