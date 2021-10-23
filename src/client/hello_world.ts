@@ -51,14 +51,14 @@ const PROGRAM_PATH = path.resolve(__dirname, '../../dist/program');
  *   - `npm run build:program-rust`
  */
 const HELLO_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
-const INVOKER_SO_PATH = path.join(PROGRAM_PATH, 'invoker.so');
+const INVOKER_SO_PATH = path.join(PROGRAM_PATH, 'invoker1.so');
 
 /**
  * Path to the keypair of the deployed program.
  * This file is created when running `solana program deploy dist/program/helloworld.so`
  */
 const HELLO_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
-const INVOKER_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'invoker-keypair.json');
+const INVOKER_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'invoker1-keypair.json');
 
 /**
  * The state of a greeting account managed by the hello world program
@@ -167,6 +167,15 @@ export async function checkProgram(): Promise<void> {
   }
   console.log(`Using program ${invokerId.toBase58()}`);
 
+  // PDA Test
+  greetedPubkey = await PublicKey.createProgramAddress(
+    [Buffer.from('hello000')],
+    invokerId,
+  );
+  console.log("invokerId", invokerId.toBase58());
+  console.log("greetedPubkey", greetedPubkey.toBase58());
+  
+  /*
   // Derive the address (public key) of a greeting account from the hello program so that it's easy to find later.
   const GREETING_SEED = 'hello';
   greetedPubkey = await PublicKey.createWithSeed(
@@ -199,20 +208,23 @@ export async function checkProgram(): Promise<void> {
       }),
     );
     await sendAndConfirmTransaction(connection, transaction, [payer]);
-  }
+  }*/
+  
+
 }
 
 /**
  * Say hello
  */
 export async function sayHello(): Promise<void> {
-  console.log('Saying hello to', greetedPubkey.toBase58());
+  console.log('Saying hello to', invokerId.toBase58());
   const instruction = new TransactionInstruction({
     keys: [{pubkey: helloId, isSigner: false, isWritable: false},
       {pubkey: greetedPubkey, isSigner: false, isWritable: true}],
     programId: invokerId,
     data: Buffer.alloc(0), // All instructions are hellos
   });
+
   await sendAndConfirmTransaction(
     connection,
     new Transaction().add(instruction),
