@@ -14,25 +14,29 @@
     "start-with-test-validator": "start-server-and-test 'solana-test-validator --reset --quiet' http://localhost:8899/health start",
     "lint": "eslint --ext .ts src/client/* && prettier --check \"src/client/**/*.ts\"",
     "lint:fix": "eslint --ext .ts src/client/* --fix && prettier --write \"src/client/**/*.ts\"",
-    "clean": "npm run clean:program-c && npm run clean:program-rust",
+    "clean": "npm run clean:program-c && npm run clean:hello",
     "build:program-c": "V=1 make -C ./src/program-c helloworld",
     "clean:program-c": "V=1 make -C ./src/program-c clean",
 
-    "build:program-rust": "cargo build-bpf --manifest-path=./src/program-rust/Cargo.toml --bpf-out-dir=dist/program",
-    "clean:program-rust": "cargo clean --manifest-path=./src/program-rust/Cargo.toml && rm -rf ./dist",
-    "test:program-rust": "cargo test-bpf --manifest-path=./src/program-rust/Cargo.toml",
+    "build:hello": "cargo build-bpf --manifest-path=./src/hello/Cargo.toml --bpf-out-dir=dist/program",
+    "clean:hello": "cargo clean --manifest-path=./src/hello/Cargo.toml && rm -rf ./dist",
+    "test:hello": "cargo test-bpf --manifest-path=./src/hello/Cargo.toml",
 
-    "build:program-rust1": "cargo build-bpf --manifest-path=./src/program-rust1/Cargo.toml --bpf-out-dir=dist/program",
-    "clean:program-rust1": "cargo clean --manifest-path=./src/program-rust1/Cargo.toml && rm -rf ./dist",
-    "test:program-rust1": "cargo test-bpf --manifest-path=./src/program-rust1/Cargo.toml",
+    "build:hello1": "cargo build-bpf --manifest-path=./src/hello1/Cargo.toml --bpf-out-dir=dist/program",
+    "clean:hello1": "cargo clean --manifest-path=./src/hello1/Cargo.toml && rm -rf ./dist",
+    "test:hello1": "cargo test-bpf --manifest-path=./src/hello1/Cargo.toml",
 
-    "build:program-rust2": "cargo build-bpf --manifest-path=./src/program-rust2/Cargo.toml --bpf-out-dir=dist/program",
-    "clean:program-rust2": "cargo clean --manifest-path=./src/program-rust2/Cargo.toml && rm -rf ./dist",
-    "test:program-rust2": "cargo test-bpf --manifest-path=./src/program-rust2/Cargo.toml",
+    "build:hello2": "cargo build-bpf --manifest-path=./src/hello2/Cargo.toml --bpf-out-dir=dist/program",
+    "clean:hello2": "cargo clean --manifest-path=./src/hello2/Cargo.toml && rm -rf ./dist",
+    "test:hello2": "cargo test-bpf --manifest-path=./src/hello2/Cargo.toml",
 
-    "build:program-invoker": "cargo build-bpf --manifest-path=./src/program-invoker/Cargo.toml --bpf-out-dir=dist/program",
-    "clean:program-invoker": "cargo clean --manifest-path=./src/program-invoker/Cargo.toml && rm -rf ./dist",
-    "test:program-invoker": "cargo test-bpf --manifest-path=./src/program-invoker/Cargo.toml",
+    "build:invoker": "cargo build-bpf --manifest-path=./src/invoker/Cargo.toml --bpf-out-dir=dist/program",
+    "clean:invoker": "cargo clean --manifest-path=./src/invoker/Cargo.toml && rm -rf ./dist",
+    "test:invoker": "cargo test-bpf --manifest-path=./src/invoker/Cargo.toml",
+
+    "build:invoker1": "cargo build-bpf --manifest-path=./src/invoker1/Cargo.toml --bpf-out-dir=dist/program",
+    "clean:invoker1": "cargo clean --manifest-path=./src/invoker1/Cargo.toml && rm -rf ./dist",
+    "test:invoker1": "cargo test-bpf --manifest-path=./src/invoker1/Cargo.toml",
 
     "pretty": "prettier --write '{,src/**/}*.ts'"
   },

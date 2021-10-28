@@ -31,6 +31,7 @@ let payer: Keypair;
  * Invoker's program id
  */
 let invokerId: PublicKey;
+let invokerId1: PublicKey;
 
 let helloId: PublicKey;
 
@@ -38,6 +39,8 @@ let helloId: PublicKey;
  * The public key of the account we are saying hello to
  */
 let greetedPubkey: PublicKey;
+
+let pdaPubkey: PublicKey;
 
 /**
  * Path to program files
@@ -51,14 +54,16 @@ const PROGRAM_PATH = path.resolve(__dirname, '../../dist/program');
  *   - `npm run build:program-rust`
  */
 const HELLO_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
-const INVOKER_SO_PATH = path.join(PROGRAM_PATH, 'invoker1.so');
+const INVOKER_SO_PATH = path.join(PROGRAM_PATH, 'invoker.so');
+const INVOKER1_SO_PATH = path.join(PROGRAM_PATH, 'invoker1.so');
 
 /**
  * Path to the keypair of the deployed program.
  * This file is created when running `solana program deploy dist/program/helloworld.so`
  */
 const HELLO_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
-const INVOKER_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'invoker1-keypair.json');
+const INVOKER_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'invoker-keypair.json');
+const INVOKER1_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'invoker1-keypair.json');
 
 /**
  * The state of a greeting account managed by the hello world program
@@ -140,6 +145,7 @@ export async function establishPayer(): Promise<void> {
 export async function checkProgram(): Promise<void> {
   // Read program id from keypair file
   try {
+    console.log("INVOKER_KEYPAIR_PATH", INVOKER_KEYPAIR_PATH);
     const invokerKeyPair = await createKeypairFromFile(INVOKER_KEYPAIR_PATH);
     invokerId = invokerKeyPair.publicKey;
 
@@ -167,15 +173,6 @@ export async function checkProgram(): Promise<void> {
   }
   console.log(`Using program ${invokerId.toBase58()}`);
 
-  // PDA Test
-  greetedPubkey = await PublicKey.createProgramAddress(
-    [Buffer.from('hello000')],
-    invokerId,
-  );
-  console.log("invokerId", invokerId.toBase58());
-  console.log("greetedPubkey", greetedPubkey.toBase58());
-  
-  /*
   // Derive the address (public key) of a greeting account from the hello program so that it's easy to find later.
   const GREETING_SEED = 'hello';
   greetedPubkey = await PublicKey.createWithSeed(
@@ -208,9 +205,60 @@ export async function checkProgram(): Promise<void> {
       }),
     );
     await sendAndConfirmTransaction(connection, transaction, [payer]);
-  }*/
-  
+  }
 
+  // PDA
+  console.log("invokerId", invokerId.toBase58());
+  pdaPubkey = await PublicKey.createProgramAddress(
+    [Buffer.from('hello')],
+    invokerId,
+  );
+  console.log("pdaPubkey", pdaPubkey.toBase58());
+}
+
+/**
+ * Check if the invoker BPF program has been deployed
+ */
+ export async function checkProgram1(): Promise<void> {
+  // Read program id from keypair file
+  try {
+    const invokerKeyPair = await createKeypairFromFile(INVOKER_KEYPAIR_PATH);
+    const invokerKeyPair1 = await createKeypairFromFile(INVOKER1_KEYPAIR_PATH);
+    invokerId = invokerKeyPair.publicKey;
+    invokerId1 = invokerKeyPair1.publicKey;
+
+    const helloKeyPair = await createKeypairFromFile(HELLO_KEYPAIR_PATH);
+    helloId = helloKeyPair.publicKey;
+  } catch (err) {
+    const errMsg = (err as Error).message;
+    throw new Error(
+      `Failed to read invoker keypair at '${INVOKER1_KEYPAIR_PATH}' due to error: ${errMsg}. Invoker may need to be deployed with \`solana program deploy dist/program/invoker.so\``,
+    );
+  }
+
+  // Check if the invoker has been deployed
+  const invokerInfo = await connection.getAccountInfo(invokerId1);
+  if (invokerInfo === null) {
+    if (fs.existsSync(INVOKER1_SO_PATH)) {
+      throw new Error(
+        'Program needs to be deployed with `solana program deploy dist/program/invoker.so`',
+      );
+    } else {
+      throw new Error('Program needs to be built and deployed');
+    }
+  } else if (!invokerInfo.executable) {
+    throw new Error(`Invoker is not executable`);
+  }
+  console.log(`Using program Invoker1=${invokerId1.toBase58()}`);
+  console.log(`Using program Invoker=${invokerId.toBase58()}`);
+
+  // PDA Test
+  greetedPubkey = await PublicKey.createProgramAddress(
+    [Buffer.from('hello002')],
+    invokerId,
+  );
+  console.log("invokerId1", invokerId1.toBase58());
+  console.log("greetedPubkey", greetedPubkey.toBase58());
 }
 
 /**
@@ -220,8 +268,26 @@ export async function sayHello(): Promise<void> {
   console.log('Saying hello to', invokerId.toBase58());
   const instruction = new TransactionInstruction({
     keys: [{pubkey: helloId, isSigner: false, isWritable: false},
-      {pubkey: greetedPubkey, isSigner: false, isWritable: true}],
+      {pubkey: greetedPubkey, isSigner: false, isWritable: true},
+      {pubkey: pdaPubkey, isSigner: false, isWritable: false },
+    ],
     programId: invokerId,
+    data: Buffer.alloc(0), // All instructions are hellos
+  });
+
+  await sendAndConfirmTransaction(
+    connection,
+    new Transaction().add(instruction),
+    [payer],
+  );
+}
+
+export async function sayHello1(): Promise<void> {
+  console.log('Saying hello to', invokerId1.toBase58());
+  const instruction = new TransactionInstruction({
+    keys: [{pubkey: helloId, isSigner: false, isWritable: false},
+      {pubkey: greetedPubkey, isSigner: false, isWritable: true}],
+    programId: helloId,
     data: Buffer.alloc(0), // All instructions are hellos
   });
 
